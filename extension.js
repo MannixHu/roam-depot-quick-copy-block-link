@@ -3,27 +3,60 @@
 const onQuickCopyDesktopMDLink = async (block) => {
   let blockText = "";
   let blockId = "";
+  const graphName = window.roamAlphaAPI.graph.name;
   if (block) {
-    // triggle: right click menu
+    // trigger: right click menu
     blockText = block?.["block-string"];
     blockId = block?.["block-uid"];
   } else {
-    // triggle: current focused block
+    // trigger: current focused block
     const blockInfo =  await window.roamAlphaAPI.ui.getFocusedBlock()
     blockId = blockInfo?.["block-uid"];
     if(!blockId) {
-      // triggle: current page
+      // trigger: current page
       blockId = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid()
     }
     const blockFocused = window.roamAlphaAPI.data.pull("[*]", [":block/uid", blockId])
-    console.log('blockFocused ', blockFocused)
     blockText = blockFocused?.[":block/string"] || blockFocused?.[":node/title"];
   }
 
-  const text = `[${blockText}](roam://#/app/MannixHu/page/${blockId})`
-  console.log("copy desktop link as markdown : ", text);
-  await navigator.clipboard.writeText(text)
+  const title = escapeTitle(blockText);
+  const url = `roam://#/app/${graphName}/page/${blockId}`;
+  
+  // Multiple link format options
+  const linkFormats = {
+    
+    // Markdown format link
+    markdown: `[${title}](${url})`,
+    
+    // HTML format link
+    html: `<a href="${url}">${title}</a>`,
+  
+  };
 
+  // Copy as rich text format for easy pasting as clickable links in Word
+  const htmlText = linkFormats.html;
+  const plainText = linkFormats.markdown; // Use markdown format for plain text
+  
+  // Use write method to support multiple formats
+  const clipboardItem = new ClipboardItem({
+    'text/html': new Blob([htmlText], { type: 'text/html' }),
+    'text/plain': new Blob([plainText], { type: 'text/plain' })
+  });
+  
+  await navigator.clipboard.write([clipboardItem]);
+}
+
+// escape title
+const escapeTitle = (title) => {
+  if(!title) return ' '
+  // Remove double brackets {{[[TODO]]}} and their content
+  title = title.replace(/{{.*?}}/g, '');
+  // Remove paired [] brackets, keep content inside
+  title = title.replace(/\[(.*?)\]/g, ' $1 ')
+  // Remove paired `` backticks, keep content inside
+  title = title.replace(/`(.*?)`/g, ' $1 ')
+  return title
 }
 
 async function onload({extensionAPI, ...rest}) {

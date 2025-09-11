@@ -1,6 +1,6 @@
 {
   "name": "roam-depot-quick-copy-block-link",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Roam Research Plugin",
   "main": "extension.js",
   "license": "MIT",
